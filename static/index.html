@@ -1,0 +1,1014 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RepSearch">
+<title>Rep Search</title>
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Inter:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#0a0a0a; --bg2:#111; --bg3:#1a1a1a; --bg4:#252525; --border:#272727;
+  --text:#f0f0f0; --muted:#666; --accent:#ff6b00; --accent2:#ff9500;
+  --weidian:#1989fa; --ok:#30d158; --fav:#ffd60a; --danger:#ff453a;
+  --safe-top:env(safe-area-inset-top,0px); --safe-bot:env(safe-area-inset-bottom,0px);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+#app{display:flex;flex-direction:column;height:100dvh;overflow:hidden}
+
+/* ── Header ── */
+.hdr{flex-shrink:0;display:flex;align-items:center;gap:8px;
+  padding:calc(var(--safe-top)+10px) 12px 10px;
+  background:var(--bg);border-bottom:1px solid var(--border);z-index:10}
+.hdr-back{display:none;width:34px;height:34px;border:none;background:var(--bg3);
+  border-radius:50%;color:var(--text);font-size:18px;cursor:pointer;flex-shrink:0;
+  align-items:center;justify-content:center}
+.hdr-back.on{display:flex}
+.hdr-title{flex:1;font-family:'Syne',sans-serif;font-size:17px;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.3px}
+.hdr-title em{color:var(--accent);font-style:normal}
+.hdr-btn{flex-shrink:0;padding:6px 11px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;
+  white-space:nowrap;display:none;transition:background .15s}
+.hdr-btn.on{display:block}
+.hdr-btn:active{background:var(--bg4)}
+.trans-toggle{flex-shrink:0;display:flex;align-items:center;gap:4px;padding:5px 9px;
+  background:var(--bg3);border:1px solid var(--border);border-radius:20px;cursor:pointer;
+  font-size:11px;font-weight:700;color:var(--muted);transition:all .15s;letter-spacing:.3px}
+.trans-toggle.on{background:rgba(25,137,250,.12);border-color:rgba(25,137,250,.3);color:var(--weidian)}
+.trans-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.trans-toggle.on .trans-dot{background:var(--weidian)}
+
+/* ── Search bar ── */
+.search-bar{flex-shrink:0;display:flex;gap:8px;padding:9px 12px;
+  background:var(--bg);border-bottom:1px solid var(--border)}
+.search-input{flex:1;background:var(--bg3);border:1.5px solid var(--border);
+  border-radius:10px;padding:9px 13px;color:var(--text);font-family:inherit;
+  font-size:15px;outline:none;transition:border-color .2s;min-width:0}
+.search-input:focus{border-color:var(--accent)}
+.search-input::placeholder{color:#3a3a3a}
+.btn-search{padding:9px 15px;background:var(--accent);color:#000;border:none;
+  border-radius:10px;font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;letter-spacing:.5px;transition:opacity .15s;white-space:nowrap;flex-shrink:0}
+.btn-search:active{opacity:.75}
+.btn-search:disabled{opacity:.35;cursor:not-allowed}
+
+/* ── Filter bar ── */
+.filter-bar{flex-shrink:0;padding:7px 12px;background:var(--bg);
+  border-bottom:1px solid var(--border);display:none}
+.filter-bar.on{display:block}
+.filter-input{width:100%;background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;padding:7px 12px;color:var(--text);font-size:14px;outline:none}
+.filter-input:focus{border-color:var(--accent)}
+
+/* ── Content ── */
+#content{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+.view{display:none}
+.view.on{display:block}
+
+/* ── Home ── */
+.home-wrap{padding:32px 20px 16px;display:flex;flex-direction:column;align-items:center}
+.home-logo{font-family:'Syne',sans-serif;font-size:52px;font-weight:800;
+  line-height:1;letter-spacing:-3px;margin-bottom:4px}
+.home-logo em{color:var(--accent);font-style:normal}
+.home-tagline{color:var(--muted);font-size:12px;margin-bottom:8px;text-align:center}
+.platform-badges{display:flex;gap:6px;margin-bottom:22px}
+.pbadge{padding:3px 10px;border-radius:12px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.pbadge.yupoo{background:rgba(255,107,0,.15);color:var(--accent);border:1px solid rgba(255,107,0,.3)}
+.pbadge.weidian{background:rgba(25,137,250,.15);color:var(--weidian);border:1px solid rgba(25,137,250,.3)}
+.home-form{width:100%;max-width:420px;display:flex;flex-direction:column;gap:10px}
+.home-input{width:100%;background:var(--bg3);border:1.5px solid var(--border);
+  border-radius:12px;padding:14px 16px;color:var(--text);font-size:16px;outline:none;
+  transition:border-color .2s}
+.home-input:focus{border-color:var(--accent)}
+.home-input::placeholder{color:#3a3a3a}
+.btn-go{width:100%;padding:14px;background:var(--accent);color:#000;border:none;
+  border-radius:12px;font-family:'Syne',sans-serif;font-size:16px;font-weight:800;
+  letter-spacing:1px;cursor:pointer;transition:opacity .15s}
+.btn-go:active{opacity:.8}
+.home-chips{margin-top:22px;width:100%;max-width:420px}
+.chips-label{font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:8px}
+.chips-list{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:6px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:20px;
+  font-size:12px;cursor:pointer;color:var(--muted);transition:all .15s}
+.chip:active{color:var(--text);background:var(--bg4)}
+
+/* ── Nav tabs (bottom of home) ── */
+.home-nav{display:flex;gap:4px;padding:0 20px;margin-bottom:4px;width:100%;max-width:420px}
+.nav-tab{flex:1;padding:10px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;
+  letter-spacing:.5px;text-align:center;cursor:pointer;color:var(--muted);transition:all .15s}
+.nav-tab.favs{color:var(--fav);border-color:rgba(255,214,10,.2);background:rgba(255,214,10,.06)}
+.nav-tab:active{background:var(--bg4)}
+
+/* ── Recent searches ── */
+.recent-wrap{padding:0 16px 20px;width:100%;max-width:500px}
+.recent-list{display:flex;flex-direction:column;gap:6px}
+.recent-row{display:flex;align-items:center;justify-content:space-between;
+  background:var(--bg2);border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;cursor:pointer;transition:background .15s}
+.recent-row:active{background:var(--bg3)}
+.recent-q{font-weight:500;font-size:14px}
+.recent-del{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:2px 6px}
+
+/* ── Search results ── */
+.sr-header{padding:10px 12px 4px;border-bottom:1px solid var(--border)}
+.sr-stats{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.sr-tabs{display:flex;gap:2px}
+.sr-tab{padding:7px 16px;border:none;border-radius:8px;font-family:'Syne',sans-serif;
+  font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);background:transparent;
+  transition:all .15s;letter-spacing:.3px}
+.sr-tab.active{color:#000}
+.sr-tab.yupoo.active{background:var(--accent)}
+.sr-tab.weidian.active{background:var(--weidian)}
+
+/* ── Seller card (Yupoo search result) ── */
+.seller-card{background:var(--bg2);border-bottom:1px solid var(--border);padding:12px}
+.sc-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:8px}
+.sc-name{font-family:'Syne',sans-serif;font-size:15px;font-weight:700}
+.sc-sub{color:var(--muted);font-size:11px;margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.sc-badge{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+.sc-badge.cat{background:rgba(255,107,0,.15);color:var(--accent)}
+.sc-badge.alb{background:rgba(48,209,88,.12);color:var(--ok)}
+.sc-top-btns{display:flex;gap:6px;flex-shrink:0;margin-left:8px}
+.btn-sm{padding:6px 11px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:7px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text);
+  white-space:nowrap;transition:background .15s}
+.btn-sm:active{background:var(--bg4)}
+.sc-snippet{font-size:12px;color:var(--muted);margin-bottom:8px;line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ── Album strip ── */
+.album-strip{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom:4px;scrollbar-width:none}
+.album-strip::-webkit-scrollbar{display:none}
+.strip-card{flex-shrink:0;width:88px;cursor:pointer;position:relative}
+.strip-thumb{width:88px;height:88px;object-fit:cover;border-radius:6px;background:var(--bg3);display:block}
+.strip-ph{width:88px;height:88px;border-radius:6px;background:var(--bg3);
+  display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--bg4)}
+.strip-title{font-size:10px;color:var(--muted);margin-top:3px;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.price-badge{position:absolute;top:4px;left:4px;background:rgba(0,0,0,.82);
+  border-radius:4px;padding:2px 5px;font-size:10px;font-weight:700;color:#fff;
+  font-family:'Syne',sans-serif;line-height:1.2}
+.price-badge .rmb{color:var(--accent2)}
+.price-badge .conv{color:rgba(255,255,255,.6);font-size:9px}
+.fav-dot{position:absolute;top:4px;right:4px;width:18px;height:18px;
+  background:rgba(0,0,0,.7);border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:11px;cursor:pointer;transition:transform .15s}
+.fav-dot:active{transform:scale(1.3)}
+.sc-more{margin-top:6px;font-size:11px;color:var(--muted)}
+
+/* ── Weidian item card ── */
+.wd-card{display:flex;gap:11px;background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:12px;cursor:pointer;transition:background .15s;position:relative}
+.wd-card:active{background:var(--bg3)}
+.wd-thumb-wrap{flex-shrink:0;width:88px;height:88px;border-radius:8px;overflow:hidden;
+  background:var(--bg3);position:relative}
+.wd-thumb{width:100%;height:100%;object-fit:cover;display:block}
+.wd-thumb-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:22px;color:var(--bg4)}
+.wd-fav{position:absolute;top:3px;right:3px;width:20px;height:20px;background:rgba(0,0,0,.7);
+  border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;
+  cursor:pointer;z-index:1;transition:transform .15s}
+.wd-fav:active{transform:scale(1.3)}
+.wd-info{flex:1;min-width:0}
+.wd-platform{display:inline-block;padding:2px 7px;background:rgba(25,137,250,.15);
+  color:var(--weidian);border-radius:4px;font-size:10px;font-weight:700;
+  letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.wd-title{font-size:13px;font-weight:600;line-height:1.4;margin-bottom:4px;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.wd-sizes{font-size:11px;color:var(--muted);line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* ── Agent buttons ── */
+.agents-bar{display:flex;gap:6px;overflow-x:auto;padding:10px 12px 0;
+  scrollbar-width:none;border-top:1px solid var(--border)}
+.agents-bar::-webkit-scrollbar{display:none}
+.agents-label{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;
+  color:var(--muted);padding:10px 12px 4px;flex-shrink:0;display:flex;align-items:center}
+.agent-btn{flex-shrink:0;padding:7px 13px;border:1px solid var(--border);border-radius:8px;
+  font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;transition:all .15s;
+  font-family:'Syne',sans-serif;letter-spacing:.3px;white-space:nowrap;display:block}
+.agent-btn:active{opacity:.7}
+.agent-btn.pandabuy{background:rgba(255,107,0,.1);color:var(--accent);border-color:rgba(255,107,0,.3)}
+.agent-btn.sugargoo{background:rgba(48,209,88,.08);color:var(--ok);border-color:rgba(48,209,88,.25)}
+.agent-btn.kakobuy{background:rgba(25,137,250,.1);color:var(--weidian);border-color:rgba(25,137,250,.3)}
+.agent-btn.cssbuy{background:rgba(255,214,10,.08);color:var(--fav);border-color:rgba(255,214,10,.25)}
+
+/* ── Seller view ── */
+.seller-info{padding:12px 12px 8px;border-bottom:1px solid var(--border)}
+.seller-name{font-family:'Syne',sans-serif;font-size:22px;font-weight:800}
+.seller-url{color:var(--muted);font-size:11px;margin-top:2px}
+.cats-scroll{display:flex;gap:7px;padding:9px 12px;overflow-x:auto;
+  border-bottom:1px solid var(--border);-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cats-scroll::-webkit-scrollbar{display:none}
+.cat-chip{flex-shrink:0;padding:6px 12px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:20px;font-size:12px;font-weight:500;cursor:pointer;white-space:nowrap;
+  max-width:180px;overflow:hidden;text-overflow:ellipsis;transition:all .15s}
+.cat-chip.active{background:var(--accent);border-color:var(--accent);color:#000}
+
+/* ── Album grid ── */
+.grid-hdr{display:flex;align-items:center;justify-content:space-between;padding:9px 11px 5px}
+.grid-count{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:1px;text-transform:uppercase;color:var(--muted)}
+.album-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:2px}
+.album-card{position:relative;background:var(--bg2);cursor:pointer;overflow:hidden;
+  aspect-ratio:1;transition:opacity .15s}
+.album-card:active{opacity:.7}
+.album-thumb{width:100%;height:100%;object-fit:cover;display:block;background:var(--bg3)}
+.album-ph{width:100%;height:100%;background:var(--bg3);display:flex;align-items:center;
+  justify-content:center;font-size:28px;color:var(--bg4)}
+.album-label{position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(transparent,rgba(0,0,0,.88));padding:22px 7px 7px;
+  font-size:10px;font-weight:500;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.album-price{position:absolute;top:5px;left:5px;background:rgba(0,0,0,.82);
+  border-radius:5px;padding:3px 7px;font-size:11px;font-weight:700;
+  font-family:'Syne',sans-serif;line-height:1.3}
+.album-price .p-rmb{color:var(--accent2)}
+.album-price .p-conv{display:block;color:rgba(255,255,255,.55);font-size:9px}
+.album-fav{position:absolute;top:5px;right:5px;width:22px;height:22px;
+  background:rgba(0,0,0,.72);border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:12px;cursor:pointer;z-index:1;transition:transform .15s}
+.album-fav:active{transform:scale(1.3)}
+.load-more{display:flex;justify-content:center;padding:16px 12px}
+.btn-more{width:100%;max-width:300px;padding:11px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:10px;font-family:'Syne',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer;color:var(--text)}
+
+/* ── Album view (images) ── */
+.album-hdr{padding:11px 12px;border-bottom:1px solid var(--border)}
+.album-hdr-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.album-title-txt{font-family:'Syne',sans-serif;font-size:15px;font-weight:700;line-height:1.3;flex:1}
+.album-title-price{text-align:right;flex-shrink:0}
+.atp-rmb{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent2)}
+.atp-conv{font-size:11px;color:var(--muted);margin-top:1px}
+.album-cnt{color:var(--muted);font-size:12px;margin-top:4px}
+.img-list{display:flex;flex-direction:column;gap:2px;padding:2px}
+.img-item{cursor:pointer;background:var(--bg2);overflow:hidden}
+.img-item img{width:100%;display:block;background:var(--bg3);transition:opacity .2s}
+.img-item img.loading{opacity:0}
+.img-item img.loaded{opacity:1}
+
+/* ── Weidian detail view ── */
+.wd-detail-hdr{padding:12px}
+.wd-detail-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;line-height:1.4;margin-bottom:6px}
+.wd-detail-sub{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+.wd-detail-agents{display:flex;gap:7px;flex-wrap:wrap;border-top:1px solid var(--border);padding-top:10px}
+.wd-img-list{display:flex;flex-direction:column;gap:2px;padding:2px}
+.wd-img-item{background:var(--bg2)}
+.wd-img-item img{width:100%;display:block;background:var(--bg3);transition:opacity .2s}
+.wd-img-item img.loading{opacity:0}
+.wd-img-item img.loaded{opacity:1}
+
+/* ── Favourites view ── */
+.favs-header{padding:12px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between}
+.favs-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800}
+.btn-clear-favs{padding:6px 12px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:8px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer}
+.favs-empty{padding:48px 20px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
+.fav-item{display:flex;gap:11px;background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:11px 12px;cursor:pointer;transition:background .15s;position:relative}
+.fav-item:active{background:var(--bg3)}
+.fav-thumb{flex-shrink:0;width:72px;height:72px;border-radius:7px;object-fit:cover;
+  background:var(--bg3);display:block}
+.fav-thumb-ph{flex-shrink:0;width:72px;height:72px;border-radius:7px;background:var(--bg3);
+  display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--bg4)}
+.fav-info{flex:1;min-width:0}
+.fav-platform{display:inline-block;padding:2px 7px;border-radius:4px;font-size:9px;
+  font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:4px}
+.fav-platform.yupoo{background:rgba(255,107,0,.15);color:var(--accent)}
+.fav-platform.weidian{background:rgba(25,137,250,.15);color:var(--weidian)}
+.fav-title{font-size:13px;font-weight:600;line-height:1.4;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fav-meta{font-size:11px;color:var(--muted);margin-top:3px}
+.fav-price{font-size:12px;font-weight:700;color:var(--accent2);margin-top:2px}
+.fav-remove{position:absolute;top:10px;right:12px;background:none;border:none;
+  color:var(--muted);font-size:18px;cursor:pointer;padding:2px 4px}
+
+/* ── Lightbox ── */
+#lb{display:none;position:fixed;inset:0;z-index:100;background:#000;flex-direction:column}
+#lb.on{display:flex}
+.lb-top{display:flex;align-items:center;justify-content:space-between;
+  padding:calc(var(--safe-top)+10px) 12px 10px;flex-shrink:0;gap:8px}
+.lb-close{width:34px;height:34px;background:rgba(255,255,255,.1);border:none;border-radius:50%;
+  color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.lb-ctr{color:rgba(255,255,255,.5);font-size:13px;flex:1;text-align:center}
+.lb-dl{width:34px;height:34px;background:rgba(255,255,255,.1);border:none;border-radius:50%;
+  color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  text-decoration:none;flex-shrink:0}
+.lb-body{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.lb-img{max-width:100%;max-height:100%;object-fit:contain;user-select:none}
+.lb-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(255,255,255,.1);
+  border:none;width:36px;height:54px;border-radius:6px;color:#fff;font-size:20px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center}
+.lb-nav.prev{left:5px} .lb-nav.next{right:5px}
+.lb-agents{flex-shrink:0;display:flex;gap:6px;overflow-x:auto;
+  padding:8px 8px calc(var(--safe-bot)+8px);scrollbar-width:none;border-top:1px solid #222}
+.lb-agents::-webkit-scrollbar{display:none}
+.lb-thumbs{flex-shrink:0;display:flex;gap:4px;overflow-x:auto;
+  padding:6px 6px calc(var(--safe-bot)+6px);scrollbar-width:none}
+.lb-thumbs::-webkit-scrollbar{display:none}
+.lb-t{flex-shrink:0;width:46px;height:46px;object-fit:cover;border-radius:4px;
+  opacity:.4;cursor:pointer;transition:opacity .15s;border:2px solid transparent}
+.lb-t.active{opacity:1;border-color:var(--accent)}
+
+/* ── States ── */
+.spinner-wrap{display:flex;align-items:center;justify-content:center;
+  padding:52px 20px;flex-direction:column;gap:10px}
+.spinner{width:28px;height:28px;border:3px solid var(--bg3);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.spinner-lbl{color:var(--muted);font-size:13px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.err-box{margin:14px 12px;background:rgba(255,69,58,.1);border:1px solid rgba(255,69,58,.22);
+  border-radius:10px;padding:14px;font-size:13px;color:var(--danger)}
+.empty-box{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;line-height:1.7}
+.skel{background:linear-gradient(90deg,var(--bg2) 25%,var(--bg3) 50%,var(--bg2) 75%);
+  background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:4px}
+@keyframes shimmer{to{background-position:-200% 0}}
+.section-label{font-family:'Syne',sans-serif;font-size:11px;font-weight:700;
+  letter-spacing:1.5px;text-transform:uppercase;padding:10px 12px 4px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- Header -->
+<header class="hdr">
+  <button class="hdr-back" id="backBtn" onclick="goBack()">&#8592;</button>
+  <div class="hdr-title" id="hdrTitle"><em>REP</em> SEARCH</div>
+  <button class="hdr-btn" id="hdrSellerBtn" onclick="openCurrentSeller()">Browse Seller</button>
+  <div class="trans-toggle on" id="transToggle" onclick="toggleTrans()">
+    <div class="trans-dot"></div><span id="transLbl">EN</span>
+  </div>
+</header>
+
+<!-- Search bar -->
+<div class="search-bar">
+  <input class="search-input" id="searchInput" type="search"
+    placeholder="nike dunk, jordan 4 bred, yeezy 350…"
+    autocorrect="off" autocapitalize="none" spellcheck="false"
+    onkeydown="if(event.key==='Enter'){event.preventDefault();doSearch()}">
+  <button class="btn-search" id="searchBtn" onclick="doSearch()">SEARCH</button>
+</div>
+
+<!-- Filter bar -->
+<div class="filter-bar" id="filterBar">
+  <input class="filter-input" id="filterInput" type="search"
+    placeholder="Filter albums…" oninput="applyFilter(this.value)">
+</div>
+
+<!-- Content -->
+<div id="content">
+
+  <!-- HOME -->
+  <div class="view on" id="viewHome">
+    <div class="home-wrap">
+      <div class="home-logo"><em>REP</em>S</div>
+      <div class="home-tagline">Search Yupoo &amp; Weidian simultaneously</div>
+      <div class="platform-badges">
+        <span class="pbadge yupoo">YUPOO</span>
+        <span class="pbadge weidian">WEIDIAN</span>
+      </div>
+      <div class="home-form">
+        <input class="home-input" id="homeInput" type="search"
+          placeholder="e.g. jordan 4 bred, nike dunk low"
+          autocorrect="off" autocapitalize="none" spellcheck="false"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();doSearchFromHome()}">
+        <button class="btn-go" onclick="doSearchFromHome()">SEARCH BOTH &#8594;</button>
+      </div>
+      <div class="home-nav" style="margin-top:16px">
+        <div class="nav-tab" onclick="show('results');renderTabPanels(S.lastResults||{yupoo:[],weidian:[]})">Recent Search</div>
+        <div class="nav-tab favs" onclick="show('favs');renderFavs()">&#9733; Saved</div>
+      </div>
+      <div class="home-chips" style="margin-top:4px">
+        <div class="chips-label">Quick search</div>
+        <div class="chips-list">
+          <div class="chip" onclick="qs('nike dunk low panda')">Dunk Low Panda</div>
+          <div class="chip" onclick="qs('jordan 4 bred')">Jordan 4 Bred</div>
+          <div class="chip" onclick="qs('yeezy 350 zebra')">Yeezy 350 Zebra</div>
+          <div class="chip" onclick="qs('air force 1 white')">AF1 White</div>
+          <div class="chip" onclick="qs('new balance 550')">NB 550</div>
+          <div class="chip" onclick="qs('jordan 1 chicago')">Jordan 1 Chicago</div>
+          <div class="chip" onclick="qs('travis scott dunk')">Travis Scott Dunk</div>
+          <div class="chip" onclick="qs('adidas samba')">Adidas Samba</div>
+        </div>
+      </div>
+    </div>
+    <div class="recent-wrap" id="recentWrap" style="display:none">
+      <div class="chips-label" style="margin-bottom:8px">Recent</div>
+      <div class="recent-list" id="recentList"></div>
+    </div>
+  </div>
+
+  <!-- RESULTS -->
+  <div class="view" id="viewResults">
+    <div class="sr-header" id="srHeader" style="display:none">
+      <div class="sr-stats" id="srStats"></div>
+      <div class="sr-tabs">
+        <button class="sr-tab yupoo active" id="tabYupoo" onclick="switchTab('yupoo')">YUPOO</button>
+        <button class="sr-tab weidian" id="tabWeidian" onclick="switchTab('weidian')">WEIDIAN</button>
+      </div>
+    </div>
+    <div id="yupooPanel"></div>
+    <div id="weidianPanel" style="display:none"></div>
+  </div>
+
+  <!-- SELLER -->
+  <div class="view" id="viewSeller">
+    <div class="seller-info">
+      <div class="seller-name" id="sellerName">—</div>
+      <div class="seller-url" id="sellerUrl">—</div>
+    </div>
+    <div class="cats-scroll" id="catsScroll"></div>
+    <div id="sellerAlbums"></div>
+  </div>
+
+  <!-- LISTING -->
+  <div class="view" id="viewListing">
+    <div id="listingContent"></div>
+    <div class="load-more" id="loadMoreWrap" style="display:none">
+      <button class="btn-more" onclick="loadMorePage()">Load more albums</button>
+    </div>
+  </div>
+
+  <!-- ALBUM (Yupoo images) -->
+  <div class="view" id="viewAlbum">
+    <div class="album-hdr">
+      <div class="album-hdr-top">
+        <div class="album-title-txt" id="albumTitle">—</div>
+        <div class="album-title-price" id="albumPriceBox" style="display:none">
+          <div class="atp-rmb" id="albumPriceRmb"></div>
+          <div class="atp-conv" id="albumPriceConv"></div>
+        </div>
+      </div>
+      <div class="album-cnt" id="albumCnt"></div>
+    </div>
+    <div class="agents-label">BUY VIA AGENT</div>
+    <div class="agents-bar" id="albumAgents"></div>
+    <div class="img-list" id="imgList" style="margin-top:10px"></div>
+  </div>
+
+  <!-- WEIDIAN item -->
+  <div class="view" id="viewWdItem">
+    <div class="wd-detail-hdr">
+      <div class="wd-detail-title" id="wdTitle">—</div>
+      <div class="wd-detail-sub" id="wdSub">—</div>
+      <div class="wd-detail-agents" id="wdAgents"></div>
+    </div>
+    <div class="wd-img-list" id="wdImgList"></div>
+  </div>
+
+  <!-- FAVOURITES -->
+  <div class="view" id="viewFavs">
+    <div class="favs-header">
+      <div class="favs-title">&#9733; Saved</div>
+      <button class="btn-clear-favs" onclick="clearAllFavs()">Clear all</button>
+    </div>
+    <div id="favsContent"></div>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /app -->
+
+<!-- Lightbox -->
+<div id="lb">
+  <div class="lb-top">
+    <button class="lb-close" onclick="closeLb()">&#10005;</button>
+    <span class="lb-ctr" id="lbCtr">1/1</span>
+    <a class="lb-dl" id="lbDl" target="_blank" title="Open full size">&#8681;</a>
+  </div>
+  <div class="lb-body">
+    <button class="lb-nav prev" onclick="lbNav(-1)">&#8249;</button>
+    <img class="lb-img" id="lbImg" src="" alt="">
+    <button class="lb-nav next" onclick="lbNav(1)">&#8250;</button>
+  </div>
+  <div class="lb-agents" id="lbAgents"></div>
+  <div class="lb-thumbs" id="lbThumbs"></div>
+</div>
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────
+const S = {
+  view: 'home', query: '', activeTab: 'yupoo',
+  sellerBase: '', sellerName: '',
+  listingUrl: '', listingPage: 1, listingTotal: 1, listingAlbums: [],
+  albumImages: [], albumAgents: {}, lbIdx: 0,
+  _fromSearch: false, lastResults: null,
+  rates: {},
+};
+
+// ── Rates (load once) ────────────────────────────────────────────────────
+fetch('/api/rates').then(r=>r.json()).then(d=>{ S.rates=d; }).catch(()=>{});
+
+// ── Translation toggle ───────────────────────────────────────────────────
+let _transOn = localStorage.getItem('trans_on') !== 'false';
+function updateTransUI(){
+  const t=document.getElementById('transToggle');
+  t.classList.toggle('on',_transOn);
+  document.getElementById('transLbl').textContent=_transOn?'EN':'ZH';
+}
+function toggleTrans(){
+  _transOn=!_transOn;
+  localStorage.setItem('trans_on',_transOn);
+  updateTransUI();
+}
+updateTransUI();
+
+// ── Views ────────────────────────────────────────────────────────────────
+function show(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+  document.getElementById('view'+cap(name)).classList.add('on');
+  S.view=name;
+  document.getElementById('backBtn').classList.toggle('on', !['home','results','favs'].includes(name));
+  document.getElementById('filterBar').classList.toggle('on', ['seller','listing'].includes(name));
+  document.getElementById('hdrSellerBtn').classList.toggle('on',
+    ['listing','album','wdItem'].includes(name) && !!S.sellerBase);
+  if(!['listing','seller'].includes(name)) document.getElementById('filterInput').value='';
+}
+function cap(s){return s.charAt(0).toUpperCase()+s.slice(1)}
+function setTitle(h){document.getElementById('hdrTitle').innerHTML=h}
+function goBack(){
+  if(['album','wdItem'].includes(S.view)){
+    if(S._fromSearch){show('results');return;}
+    show('listing'); renderListingGrid(S.listingAlbums); return;
+  }
+  if(S.view==='listing'){show(S._fromSearch?'results':'seller'); return;}
+  if(S.view==='seller'){show('results'); setTitle(`<em>${esc(S.query)}</em>`); return;}
+  if(S.view==='results'){show('home'); setTitle('<em>REP</em> SEARCH'); return;}
+  if(S.view==='favs'){show('home'); setTitle('<em>REP</em> SEARCH'); return;}
+}
+function openCurrentSeller(){if(S.sellerBase) loadSeller(S.sellerBase);}
+
+// ── Image proxy ──────────────────────────────────────────────────────────
+function px(url,ref){
+  ref=ref||(S.sellerBase?S.sellerBase+'/':'https://x.yupoo.com/');
+  return '/img?url='+encodeURIComponent(url)+'&ref='+encodeURIComponent(ref);
+}
+
+// ── Favourites ───────────────────────────────────────────────────────────
+const FAV_KEY='reps_favs_v2';
+function getFavs(){return JSON.parse(localStorage.getItem(FAV_KEY)||'[]')}
+function saveFavs(f){localStorage.setItem(FAV_KEY,JSON.stringify(f))}
+function isFav(id){return getFavs().some(f=>f.id===id)}
+function toggleFav(item, el){
+  let favs=getFavs();
+  const idx=favs.findIndex(f=>f.id===item.id);
+  if(idx>=0){favs.splice(idx,1);}
+  else{favs.unshift({...item, savedAt:Date.now()});}
+  saveFavs(favs);
+  if(el) el.textContent=isFav(item.id)?'★':'☆';
+}
+function favIcon(id){return isFav(id)?'★':'☆'}
+
+function renderFavs(){
+  setTitle('&#9733; <em>SAVED</em>');
+  const favs=getFavs();
+  const el=document.getElementById('favsContent');
+  if(!favs.length){
+    el.innerHTML='<div class="favs-empty">No saved items yet.<br>Tap ☆ on any album or item to save it here.</div>';
+    return;
+  }
+  el.innerHTML=favs.map(f=>{
+    const ref=f.platform==='yupoo'?(f.sellerBase+'/'):'https://weidian.com/';
+    const thumb=f.thumb?`<img class="fav-thumb" loading="lazy" src="${px(f.thumb,ref)}" onerror="this.style.display='none'">`
+      :`<div class="fav-thumb-ph">📦</div>`;
+    const price=f.price&&f.price.rmb?`<div class="fav-price">¥${f.price.rmb}${S.rates.GBP?' · £'+Math.round(f.price.rmb*S.rates.GBP):''}</div>`:'';
+    return `<div class="fav-item" onclick="openFav(${JSON.stringify(f).replace(/"/g,'&quot;')})">
+      ${thumb}
+      <div class="fav-info">
+        <span class="fav-platform ${f.platform}">${f.platform.toUpperCase()}</span>
+        <div class="fav-title">${esc(f.title)}</div>
+        <div class="fav-meta">${esc(f.seller||f.item_id||'')}</div>
+        ${price}
+      </div>
+      <button class="fav-remove" onclick="event.stopPropagation();removeFav('${f.id}',this.parentElement)">&#215;</button>
+    </div>`;
+  }).join('');
+}
+function removeFav(id,el){
+  let favs=getFavs().filter(f=>f.id!==id);
+  saveFavs(favs);
+  if(el) el.remove();
+  if(!getFavs().length) renderFavs();
+}
+function clearAllFavs(){
+  if(confirm('Clear all saved items?')){saveFavs([]);renderFavs();}
+}
+function openFav(f){
+  S.sellerBase=f.sellerBase||'';
+  S._fromSearch=false;
+  if(f.platform==='yupoo') loadAlbum(f.url, f.title);
+  else openWdItem(f.item_id, f.url);
+}
+
+// ── Price formatting ─────────────────────────────────────────────────────
+function fmtPrice(price, full=false){
+  if(!price||!price.rmb) return '';
+  let s=`<span class="p-rmb">¥${price.rmb}</span>`;
+  if(S.rates.GBP) s+=`<span class="p-conv">£${Math.round(price.rmb*S.rates.GBP)}</span>`;
+  return s;
+}
+function priceBadge(price){
+  if(!price||!price.rmb) return '';
+  let top=`<span class="rmb">¥${price.rmb}</span>`;
+  let bot=S.rates.GBP?`<span class="conv">£${Math.round(price.rmb*S.rates.GBP)}</span>`:'';
+  return `<div class="price-badge">${top}${bot}</div>`;
+}
+
+// ── Agent buttons ────────────────────────────────────────────────────────
+function agentBtnsHtml(agents){
+  if(!agents) return '';
+  const map={Pandabuy:'pandabuy',Sugargoo:'sugargoo',Kakobuy:'kakobuy',CSSBUY:'cssbuy'};
+  return Object.entries(agents).map(([name,url])=>
+    `<a class="agent-btn ${map[name]||''}" href="${esc(url)}" target="_blank" rel="noopener">${name}</a>`
+  ).join('');
+}
+
+// ── Recent searches ──────────────────────────────────────────────────────
+const RK='reps_recent';
+function getRecent(){return JSON.parse(localStorage.getItem(RK)||'[]')}
+function saveRecent(q){let r=getRecent().filter(x=>x!==q);r.unshift(q);r=r.slice(0,8);localStorage.setItem(RK,JSON.stringify(r));renderRecent()}
+function renderRecent(){
+  const r=getRecent();
+  document.getElementById('recentWrap').style.display=r.length?'':'none';
+  document.getElementById('recentList').innerHTML=r.map((q,i)=>`
+    <div class="recent-row" onclick="qs('${esc(q)}')">
+      <span class="recent-q">${esc(q)}</span>
+      <button class="recent-del" onclick="event.stopPropagation();delRecent(${i})">&#215;</button>
+    </div>`).join('');
+}
+function delRecent(i){const r=getRecent();r.splice(i,1);localStorage.setItem(RK,JSON.stringify(r));renderRecent()}
+
+// ── Search ───────────────────────────────────────────────────────────────
+function doSearchFromHome(){
+  const q=document.getElementById('homeInput').value.trim();
+  if(q){document.getElementById('searchInput').value=q; doSearch();}
+}
+function qs(q){
+  document.getElementById('homeInput').value=q;
+  document.getElementById('searchInput').value=q;
+  doSearch();
+}
+function doSearch(){
+  const q=document.getElementById('searchInput').value.trim();
+  if(!q) return;
+  S.query=q; S.sellerBase=''; S._fromSearch=true;
+  document.getElementById('homeInput').value=q;
+  saveRecent(q);
+  show('results');
+  setTitle(`<em>${esc(q)}</em>`);
+  document.getElementById('srHeader').style.display='none';
+  document.getElementById('yupooPanel').innerHTML=spinHtml('Searching Yupoo &amp; Weidian…');
+  document.getElementById('weidianPanel').innerHTML='';
+  const btn=document.getElementById('searchBtn');
+  btn.disabled=true; btn.textContent='…';
+
+  const url=`/api/search?q=${encodeURIComponent(q)}&max=15${_transOn?'':'&translate=0'}`;
+  fetch(url).then(r=>r.json()).then(data=>{
+    btn.disabled=false; btn.textContent='SEARCH';
+    if(data.error){document.getElementById('yupooPanel').innerHTML=errHtml(data.error);return;}
+    S.lastResults=data;
+    renderTabPanels(data);
+  }).catch(()=>{
+    btn.disabled=false; btn.textContent='SEARCH';
+    document.getElementById('yupooPanel').innerHTML=errHtml('Search failed. Check your connection.');
+  });
+}
+
+function renderTabPanels(data){
+  const yupoo=data.yupoo||[], weidian=data.weidian||[];
+  document.getElementById('srHeader').style.display='';
+  document.getElementById('srStats').textContent=`${yupoo.length} YUPOO SELLERS  ·  ${weidian.length} WEIDIAN ITEMS`;
+  document.getElementById('tabYupoo').textContent=`YUPOO (${yupoo.length})`;
+  document.getElementById('tabWeidian').textContent=`WEIDIAN (${weidian.length})`;
+
+  document.getElementById('yupooPanel').innerHTML=yupoo.length
+    ? yupoo.map(r=>sellerCardHtml(r)).join('')
+    : '<div class="empty-box">No Yupoo sellers found.</div>';
+
+  document.getElementById('weidianPanel').innerHTML=weidian.length
+    ? '<div class="section-label">WEIDIAN LISTINGS</div>'+weidian.map(i=>wdCardHtml(i)).join('')
+    : '<div class="empty-box">No Weidian listings found.</div>';
+
+  switchTab(S.activeTab);
+}
+function switchTab(tab){
+  S.activeTab=tab;
+  document.getElementById('tabYupoo').classList.toggle('active',tab==='yupoo');
+  document.getElementById('tabWeidian').classList.toggle('active',tab==='weidian');
+  document.getElementById('yupooPanel').style.display=tab==='yupoo'?'':'none';
+  document.getElementById('weidianPanel').style.display=tab==='weidian'?'':'none';
+}
+
+// ── Yupoo seller card ────────────────────────────────────────────────────
+function sellerCardHtml(r){
+  const bCls=r.page_type==='album'?'alb':'cat';
+  const bTxt=r.page_type==='album'?'ALBUM':'CATEGORY';
+  const albums=r.albums||[];
+  const strip=albums.length
+    ? albums.slice(0,8).map(a=>{
+        const favId='yp_'+a.id;
+        const fi={id:favId,platform:'yupoo',title:a.title,url:a.url,
+                  thumb:a.thumb,sellerBase:r.base_url,price:a.price,seller:r.seller_name};
+        return `<div class="strip-card" onclick="event.stopPropagation();openAlbumFromSearch('${esc(a.url)}','${esc(a.title)}','${esc(r.base_url)}')">
+          ${a.thumb
+            ?`<img class="strip-thumb" loading="lazy" src="${px(a.thumb,r.base_url+'/')}" alt="${esc(a.title)}"
+                onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+              <div class="strip-ph" style="display:none">📦</div>`
+            :`<div class="strip-ph">📦</div>`}
+          ${priceBadge(a.price)}
+          <div class="fav-dot" onclick="event.stopPropagation();toggleFav(${JSON.stringify(fi).replace(/"/g,'&quot;')},this)">${favIcon(favId)}</div>
+          <div class="strip-title">${esc(a.title)}</div>
+        </div>`;
+      }).join('')
+    : '<div style="color:var(--muted);font-size:12px;padding:4px 0">No matching albums found</div>';
+  const more=r.total_albums>8?`<div class="sc-more">+${r.total_albums-8} more albums</div>`:'';
+  return `<div class="seller-card">
+    <div class="sc-top">
+      <div>
+        <div class="sc-name">${esc(r.seller_name||r.seller)}</div>
+        <div class="sc-sub">
+          <span>${esc(r.seller)}.x.yupoo.com</span>
+          <span class="sc-badge ${bCls}">${bTxt}</span>
+        </div>
+      </div>
+      <div class="sc-top-btns">
+        <button class="btn-sm" onclick="loadSeller('${esc(r.base_url)}')">Browse</button>
+      </div>
+    </div>
+    ${r.snippet?`<div class="sc-snippet">${esc(r.snippet)}</div>`:''}
+    <div class="album-strip">${strip}</div>
+    ${more}
+  </div>`;
+}
+
+// ── Weidian item card ────────────────────────────────────────────────────
+function wdCardHtml(item){
+  const ref='https://weidian.com/';
+  const favId='wd_'+item.item_id;
+  const fi={id:favId,platform:'weidian',title:item.title,url:item.url,
+            thumb:item.cover,item_id:item.item_id};
+  const thumb=item.cover
+    ?`<img class="wd-thumb" loading="lazy" src="${px(item.cover,ref)}" alt="${esc(item.title)}"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div class="wd-thumb-ph" style="display:none">📦</div>`
+    :`<div class="wd-thumb-ph">📦</div>`;
+  const sizes=item.sizes&&item.sizes.length?'Sizes: '+item.sizes.join(' · ')
+    :(item.description||'').split('\n').slice(1,3).join(' ');
+  return `<div class="wd-card" onclick="openWdItem('${esc(item.item_id)}','${esc(item.url)}')">
+    <div class="wd-thumb-wrap">
+      ${thumb}
+      <div class="wd-fav" onclick="event.stopPropagation();toggleFav(${JSON.stringify(fi).replace(/"/g,'&quot;')},this)">${favIcon(favId)}</div>
+    </div>
+    <div class="wd-info">
+      <div class="wd-platform">WEIDIAN</div>
+      <div class="wd-title">${esc(item.title||'Weidian Item')}</div>
+      <div class="wd-sizes">${esc(sizes.substring(0,120))}</div>
+    </div>
+  </div>`;
+}
+
+// ── Open Weidian item ────────────────────────────────────────────────────
+function openWdItem(itemId, url){
+  show('wdItem');
+  setTitle('<em>WEIDIAN</em>');
+  document.getElementById('wdTitle').textContent='Loading…';
+  document.getElementById('wdSub').textContent='';
+  document.getElementById('wdAgents').innerHTML='';
+  document.getElementById('wdImgList').innerHTML=spinHtml('Loading…');
+
+  // Use cached data if available
+  const cached=S.lastResults&&S.lastResults.weidian&&S.lastResults.weidian.find(i=>i.item_id===itemId);
+  if(cached&&cached.images&&cached.images.length){renderWdItem(cached,url);return;}
+
+  fetch(`/api/weidian/item?id=${encodeURIComponent(itemId)}`).then(r=>r.json()).then(data=>{
+    if(data.error){document.getElementById('wdImgList').innerHTML=errHtml(data.error);return;}
+    renderWdItem(data,url);
+  }).catch(()=>document.getElementById('wdImgList').innerHTML=errHtml('Failed to load.'));
+}
+function renderWdItem(data,url){
+  const title=data.title||'Weidian Item';
+  document.getElementById('wdTitle').textContent=title;
+  setTitle(`<em>${esc(title.substring(0,40))}</em>`);
+  const parts=[];
+  if(data.sizes&&data.sizes.length) parts.push('Sizes: '+data.sizes.join(' · '));
+  if(data.colors&&data.colors.length) parts.push('Colors: '+data.colors.join(', '));
+  document.getElementById('wdSub').textContent=parts.join('  ').substring(0,200);
+  const agents=data.agents||{};
+  document.getElementById('wdAgents').innerHTML=agentBtnsHtml(agents);
+  S.albumImages=(data.images||[]).map(u=>({url:u,orig:u,thumb:u}));
+  const ref='https://weidian.com/';
+  if(!S.albumImages.length){
+    document.getElementById('wdImgList').innerHTML='<div class="empty-box">No images found.</div>';
+    return;
+  }
+  document.getElementById('wdImgList').innerHTML=S.albumImages.map((img,i)=>
+    `<div class="wd-img-item" onclick="openLb(${i})">
+      <img loading="lazy" class="loading" src="${px(img.url,ref)}" alt=""
+        onload="this.classList.replace('loading','loaded')"
+        onerror="this.classList.replace('loading','loaded')">
+    </div>`).join('');
+  S.albumAgents=agents;
+}
+
+// ── Load seller ──────────────────────────────────────────────────────────
+function loadSeller(url){
+  S.sellerBase=url; S._fromSearch=false;
+  show('seller');
+  document.getElementById('sellerAlbums').innerHTML=spinHtml('Loading…');
+  document.getElementById('catsScroll').innerHTML='';
+  setTitle('Loading…');
+  fetch(`/api/seller?url=${encodeURIComponent(url)}`).then(r=>r.json()).then(d=>{
+    if(d.error){document.getElementById('sellerAlbums').innerHTML=errHtml(d.error);return;}
+    S.sellerName=d.name; S.sellerBase=d.base_url;
+    document.getElementById('sellerName').textContent=d.name;
+    document.getElementById('sellerUrl').textContent=d.base_url;
+    setTitle(`<em>${esc(d.name)}</em>`);
+    const cs=document.getElementById('catsScroll');
+    if(d.categories.length){
+      cs.style.display='flex';
+      cs.innerHTML=`<div class="cat-chip active" onclick="activateCat(this,'${esc(d.base_url)}/albums')">All</div>`
+        +d.categories.slice(0,50).map(c=>`<div class="cat-chip" onclick="activateCat(this,'${esc(c.url)}')">${esc(c.name)}</div>`).join('');
+    } else cs.style.display='none';
+    const ag=document.getElementById('sellerAlbums');
+    if(!d.albums.length){ag.innerHTML='<div class="empty-box">No albums found.</div>';return;}
+    ag.innerHTML=`<div class="grid-hdr"><span class="grid-count">${d.albums.length} ALBUMS</span></div>`
+      +`<div class="album-grid" id="sellerGrid">${d.albums.map(a=>albumCardHtml(a)).join('')}</div>`;
+  }).catch(()=>document.getElementById('sellerAlbums').innerHTML=errHtml('Failed to load seller.'));
+}
+function activateCat(el,url){
+  document.querySelectorAll('.cat-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  loadListing(url,false);
+}
+
+// ── Listing ──────────────────────────────────────────────────────────────
+function loadListing(url,fromSearch){
+  S.listingUrl=url; S.listingPage=1; S.listingAlbums=[]; S._fromSearch=!!fromSearch;
+  show('listing');
+  document.getElementById('listingContent').innerHTML=skelGrid();
+  document.getElementById('loadMoreWrap').style.display='none';
+  fetchListPage(1,true);
+}
+function fetchListPage(page,replace){
+  fetch(`/api/browse?url=${encodeURIComponent(S.listingUrl)}&page=${page}`).then(r=>r.json()).then(d=>{
+    if(d.error){document.getElementById('listingContent').innerHTML=errHtml(d.error);return;}
+    S.listingPage=d.page; S.listingTotal=d.total_pages;
+    S.listingAlbums=replace?d.albums:S.listingAlbums.concat(d.albums);
+    setTitle(`<em>${esc((d.title||'Albums').substring(0,40))}</em>`);
+    renderListingGrid(S.listingAlbums);
+    document.getElementById('loadMoreWrap').style.display=(d.page<d.total_pages)?'flex':'none';
+  }).catch(()=>document.getElementById('listingContent').innerHTML=errHtml('Failed to load.'));
+}
+function loadMorePage(){fetchListPage(S.listingPage+1,false)}
+function renderListingGrid(albums){
+  const el=document.getElementById('listingContent');
+  if(!albums.length){el.innerHTML='<div class="empty-box">No albums found.</div>';return;}
+  el.innerHTML=`<div class="grid-hdr"><span class="grid-count">${albums.length} ALBUMS</span></div>`
+    +`<div class="album-grid" id="listingGrid">${albums.map(a=>albumCardHtml(a)).join('')}</div>`;
+}
+function applyFilter(q){
+  const lower=q.toLowerCase();
+  ['listingGrid','sellerGrid'].forEach(id=>{
+    const g=document.getElementById(id);
+    if(g) g.querySelectorAll('.album-card').forEach(c=>{
+      c.style.display=(!lower||(c.dataset.title||'').toLowerCase().includes(lower))?'':'none';
+    });
+  });
+}
+
+// ── Album card ────────────────────────────────────────────────────────────
+function albumCardHtml(a){
+  const ref=S.sellerBase?S.sellerBase+'/':'https://x.yupoo.com/';
+  const thumb=a.thumb
+    ?`<img class="album-thumb" loading="lazy" src="${px(a.thumb,ref)}" alt="${esc(a.title)}"
+        onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+       <div class="album-ph" style="display:none">📦</div>`
+    :`<div class="album-ph">📦</div>`;
+  const favId='yp_'+a.id;
+  const fi={id:favId,platform:'yupoo',title:a.title,url:a.url,
+            thumb:a.thumb,sellerBase:S.sellerBase,price:a.price,seller:S.sellerName};
+  return `<div class="album-card" data-title="${esc(a.title)}" onclick="loadAlbum('${esc(a.url)}','${esc(a.title)}')">
+    ${thumb}
+    ${a.price&&a.price.rmb?`<div class="album-price"><span class="p-rmb">¥${a.price.rmb}</span>${S.rates.GBP?`<span class="p-conv">£${Math.round(a.price.rmb*S.rates.GBP)}</span>`:''}</div>`:''}
+    <div class="album-fav" onclick="event.stopPropagation();toggleFav(${JSON.stringify(fi).replace(/"/g,'&quot;')},this)">${favIcon(favId)}</div>
+    <div class="album-label">${esc(a.title)}</div>
+  </div>`;
+}
+
+// ── Album viewer ──────────────────────────────────────────────────────────
+function openAlbumFromSearch(url,title,base){
+  S.sellerBase=base||S.sellerBase; S._fromSearch=true;
+  loadAlbum(url,title);
+}
+function loadAlbum(url,title){
+  show('album');
+  document.getElementById('albumTitle').textContent=title||'…';
+  document.getElementById('albumPriceBox').style.display='none';
+  document.getElementById('albumCnt').textContent='';
+  document.getElementById('albumAgents').innerHTML='';
+  document.getElementById('imgList').innerHTML=spinHtml('Loading images…');
+  setTitle(`<em>${esc((title||'').substring(0,40))}</em>`);
+
+  fetch(`/api/album?url=${encodeURIComponent(url)}`).then(r=>r.json()).then(d=>{
+    if(d.error){document.getElementById('imgList').innerHTML=errHtml(d.error);return;}
+    S.albumImages=d.images; S.albumAgents=d.agents||{};
+    S.sellerBase=d.base_url||S.sellerBase;
+    document.getElementById('albumTitle').textContent=d.title;
+    document.getElementById('albumCnt').textContent=d.images.length+' images';
+    setTitle(`<em>${esc(d.title.substring(0,40))}</em>`);
+
+    // Price from title
+    const priceMatch=d.title.match(/¥?(\d{2,4})/);
+    const rmb=priceMatch?parseInt(priceMatch[1]):null;
+    if(rmb&&rmb>=30&&rmb<=5000&&S.rates.GBP){
+      document.getElementById('albumPriceBox').style.display='';
+      document.getElementById('albumPriceRmb').textContent='¥'+rmb;
+      document.getElementById('albumPriceConv').textContent='£'+Math.round(rmb*S.rates.GBP)+' / $'+Math.round(rmb*(S.rates.USD||0));
+    }
+
+    // Agent buttons
+    document.getElementById('albumAgents').innerHTML=agentBtnsHtml(d.agents);
+
+    // Images
+    const ref=d.base_url+'/';
+    document.getElementById('imgList').innerHTML=d.images.map((img,i)=>
+      `<div class="img-item" onclick="openLb(${i})">
+        <img loading="lazy" class="loading" src="${px(img.url,ref)}" alt="${esc(img.alt)}"
+          onload="this.classList.replace('loading','loaded')"
+          onerror="this.classList.replace('loading','loaded')">
+      </div>`).join('');
+  }).catch(()=>document.getElementById('imgList').innerHTML=errHtml('Failed to load album.'));
+}
+
+// ── Lightbox ──────────────────────────────────────────────────────────────
+function openLb(i){S.lbIdx=i;document.getElementById('lb').classList.add('on');renderLb();}
+function closeLb(){document.getElementById('lb').classList.remove('on');}
+function lbNav(d){S.lbIdx=(S.lbIdx+d+S.albumImages.length)%S.albumImages.length;renderLb();}
+function renderLb(){
+  const imgs=S.albumImages, i=S.lbIdx, img=imgs[i]; if(!img) return;
+  const isWd=!img.orig||img.orig===img.url&&!S.sellerBase.includes('yupoo');
+  const ref=isWd?'https://weidian.com/':(S.sellerBase?S.sellerBase+'/':'https://x.yupoo.com/');
+  document.getElementById('lbImg').src=px(img.url,ref);
+  document.getElementById('lbCtr').textContent=`${i+1}/${imgs.length}`;
+  document.getElementById('lbDl').href=px(img.orig||img.url,ref);
+
+  // Agent buttons in lightbox
+  const la=document.getElementById('lbAgents');
+  if(!la.children.length&&Object.keys(S.albumAgents).length){
+    la.innerHTML=agentBtnsHtml(S.albumAgents);
+  }
+
+  // Thumbnails
+  const tb=document.getElementById('lbThumbs');
+  if(!tb.children.length){
+    tb.innerHTML=imgs.map((im,idx)=>
+      `<img class="lb-t${idx===i?' active':''}" loading="lazy"
+        src="${px(im.thumb||im.url,ref)}"
+        onclick="S.lbIdx=${idx};renderLb()" alt="">`).join('');
+  } else {
+    tb.querySelectorAll('.lb-t').forEach((t,idx)=>t.classList.toggle('active',idx===i));
+    const act=tb.querySelector('.lb-t.active');
+    if(act) act.scrollIntoView({inline:'center',behavior:'smooth'});
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('lb').classList.contains('on')) return;
+  if(e.key==='ArrowRight') lbNav(1);
+  if(e.key==='ArrowLeft') lbNav(-1);
+  if(e.key==='Escape') closeLb();
+});
+let _tx=0;
+document.getElementById('lb').addEventListener('touchstart',e=>{_tx=e.touches[0].clientX;},{passive:true});
+document.getElementById('lb').addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-_tx;
+  if(Math.abs(dx)>50) lbNav(dx<0?1:-1);
+});
+
+// ── Utilities ─────────────────────────────────────────────────────────────
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function spinHtml(m){return`<div class="spinner-wrap"><div class="spinner"></div><div class="spinner-lbl">${m}</div></div>`}
+function errHtml(m){return`<div class="err-box">&#9888; ${esc(m)}</div>`}
+function skelGrid(){return`<div class="album-grid">${Array(8).fill('<div class="album-card skel" style="aspect-ratio:1"></div>').join('')}</div>`}
+
+// ── Init ──────────────────────────────────────────────────────────────────
+renderRecent();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/static/sw.js');
+const _qp=new URLSearchParams(location.search).get('q');
+if(_qp){document.getElementById('searchInput').value=_qp;document.getElementById('homeInput').value=_qp;doSearch();}
+</script>
+</body>
+</html>
