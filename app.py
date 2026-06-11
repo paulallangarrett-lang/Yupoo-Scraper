@@ -24,6 +24,48 @@ HEADERS_MOBILE = {
     "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148",
 }
 
+# ─── Search cache (30-min TTL, prevents hammering Yahoo on repeat searches) ──────
+
+from collections import OrderedDict
+import random
+
+class _TTLCache:
+    def __init__(self, max_size=200, ttl=1800):
+        self.cache = OrderedDict()
+        self.times = {}
+        self.max_size = max_size
+        self.ttl = ttl
+    def get(self, key):
+        if key in self.cache:
+            if time.time() - self.times[key] < self.ttl:
+                self.cache.move_to_end(key)
+                return self.cache[key]
+            del self.cache[key]; del self.times[key]
+        return None
+    def set(self, key, value):
+        if key in self.cache: self.cache.move_to_end(key)
+        self.cache[key] = value
+        self.times[key] = time.time()
+        if len(self.cache) > self.max_size:
+            k = next(iter(self.cache)); del self.cache[k]; del self.times[k]
+
+SEARCH_CACHE = _TTLCache()
+_LAST_YAHOO_CALL = 0.0   # timestamp of last Yahoo request
+_YAHOO_MIN_GAP   = 3.0   # minimum seconds between searches for different queries
+
+_UA_POOL = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Safari/605.1.15",
+]
+def _yahoo_headers():
+    return {"User-Agent": random.choice(_UA_POOL),
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.5", "Accept-Encoding": "gzip, deflate, br", "DNT": "1"}
+
 SESSION = requests.Session()
 SESSION.headers.update(HEADERS_DESKTOP)
 
@@ -167,17 +209,29 @@ def translate_weidian_result(item):
 # ─── Yahoo search ─────────────────────────────────────────────────────────────
 
 def yahoo_search(query_variants, result_filter_fn, max_results=20):
+    """Fresh session + UA rotation + retry on empty results + throttle."""
+    global _LAST_YAHOO_CALL
+    # Enforce minimum gap between Yahoo searches (avoids 500 rate-limits)
+    gap = time.time() - _LAST_YAHOO_CALL
+    if gap < _YAHOO_MIN_GAP:
+        time.sleep(_YAHOO_MIN_GAP - gap)
+    _LAST_YAHOO_CALL = time.time()
     results, seen = [], set()
     for variant in query_variants:
-        if len(results) >= max_results: break
-        for page_start in [1, 11]:
-            if len(results) >= max_results: break
+        if len(results) >= max_results:
+            break
+        for attempt in range(2):
             try:
-                r = SESSION.get("https://search.yahoo.com/search",
-                                params={"n": "10", "p": variant, "nojs": "1", "b": str(page_start)},
-                                headers=HEADERS_DESKTOP, timeout=15)
-                if r.status_code != 200: break
+                sess = requests.Session()
+                r = sess.get("https://search.yahoo.com/search",
+                             params={"n": "10", "p": variant, "nojs": "1"},
+                             headers=_yahoo_headers(), timeout=15)
+                if r.status_code == 500:
+                    time.sleep(5 + random.uniform(0, 2)); continue  # hard rate-limit, longer wait
+                if r.status_code not in (200,):
+                    time.sleep(2); continue
                 soup = BeautifulSoup(r.content, "lxml")
+                found = 0
                 for a in soup.find_all("a", href=True):
                     href = a.get("href", "")
                     if "r.search.yahoo.com" not in href: continue
@@ -186,11 +240,12 @@ def yahoo_search(query_variants, result_filter_fn, max_results=20):
                     url = requests.utils.unquote(m.group(1))
                     item = result_filter_fn(url, a, soup)
                     if item and item["_key"] not in seen:
-                        seen.add(item["_key"])
-                        results.append(item)
-                time.sleep(0.8)
+                        seen.add(item["_key"]); results.append(item); found += 1
+                if found > 0: break
+                time.sleep(2 + random.uniform(0, 1))
             except Exception:
-                break
+                time.sleep(2)
+        time.sleep(1.2 + random.uniform(0, 0.5))
     return results[:max_results]
 
 # ─── Yupoo helpers ────────────────────────────────────────────────────────────
@@ -341,6 +396,12 @@ def api_search():
     should_translate = request.args.get("translate", "1") != "0"
     if not query: return jsonify({"error": "No query"}), 400
 
+    # ── Cache check — same query within 30 min returns instantly ──
+    cache_key = f"{query.lower().strip()}|{max_each}"
+    cached = SEARCH_CACHE.get(cache_key)
+    if cached:
+        return jsonify(cached)
+
     # Yupoo
     yupoo_hits = yahoo_search(
         [f"site:x.yupoo.com {query}", f'site:x.yupoo.com "{query}"'],
@@ -375,7 +436,13 @@ def api_search():
             yupoo_results  = [f.result() for f in yf]
             weidian_results = [f.result() for f in wf]
 
-    return jsonify({"query": query, "yupoo": yupoo_results, "weidian": weidian_results})
+    # If both empty, it may be a rate-limit - add a hint
+    message = ""
+    if not yupoo_results and not weidian_results:
+        message = "No results found. If this keeps happening, wait a moment and try again."
+    payload = {"query": query, "yupoo": yupoo_results, "weidian": weidian_results, "message": message}
+    SEARCH_CACHE.set(cache_key, payload)
+    return jsonify(payload)
 
 
 @app.route("/api/seller")
